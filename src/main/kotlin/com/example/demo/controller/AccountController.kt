@@ -1,12 +1,13 @@
 package com.example.demo.controller
 
-import com.example.demo.model.CurrencyCode
+import com.example.demo.model.db.CurrencyCode
+import com.example.demo.model.dto.AccountDto
+import com.example.demo.model.dto.NewAccountDto
+import com.example.demo.model.exception.InternalException
 import com.example.demo.service.AccountService
-import com.example.demo.service.BadRequestException
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
-import java.util.*
 
 @RestController
 @RequestMapping("/api/v1/accounts")
@@ -19,7 +20,7 @@ private class AccountController(private val accountService: AccountService) {
     }
 
     @GetMapping(path = ["/{pesel}"])
-    @Operation(summary = "Get account with given pese;")
+    @Operation(summary = "Get account with given pesel")
     fun getAccount(@PathVariable("pesel") pesel: String): AccountDto {
         return accountService.findAccountByPesel(pesel)
     }
@@ -35,28 +36,9 @@ private class AccountController(private val accountService: AccountService) {
         if (from != to) {
             return accountService.exchange(pesel, value, from, to)
         }
-        throw BadRequestException("Currency codes are that same")
+        throw InternalException("Currency codes are that same")
 
     }
+
 }
 
-data class NewAccountDto(
-    val firstName: String,
-    val lastName: String,
-    val pesel: String,
-    val balancePln: BigDecimal
-)
-
-data class AccountDto(
-    val id: UUID?,
-    val firstName: String,
-    val lastName: String,
-    val pesel: String,
-    val accounts: List<SubAccountDto>
-)
-
-data class SubAccountDto(
-    val id: UUID?,
-    val currency: CurrencyCode,
-    val balance: BigDecimal
-)

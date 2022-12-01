@@ -1,6 +1,6 @@
 package com.example.demo.service
 
-import com.example.demo.model.CurrencyCode
+import com.example.demo.model.db.CurrencyCode
 import org.springframework.core.convert.converter.Converter
 import org.springframework.stereotype.Service
 

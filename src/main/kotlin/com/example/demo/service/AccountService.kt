@@ -1,8 +1,13 @@
 package com.example.demo.service
 
-import com.example.demo.controller.AccountDto
-import com.example.demo.controller.NewAccountDto
-import com.example.demo.model.*
+import com.example.demo.model.customScale
+import com.example.demo.model.db.CurrencyCode
+import com.example.demo.model.db.SubAccount
+import com.example.demo.model.dto.AccountDto
+import com.example.demo.model.dto.NewAccountDto
+import com.example.demo.model.exception.InternalException
+import com.example.demo.model.toAccount
+import com.example.demo.model.toAccountDto
 import com.example.demo.repository.AccountRepository
 import com.example.demo.repository.SubAccountRepository
 import org.springframework.stereotype.Service
@@ -21,7 +26,7 @@ internal class AccountService(
     fun registerAccount(accountDto: NewAccountDto): AccountDto {
         verifyPesel(accountDto.pesel)
         if (accountRepository.existsByPesel(accountDto.pesel)) {
-            throw BadRequestException("Pesel exists in system")
+            throw InternalException("Pesel exists in system")
         }
         return accountRepository.save(accountDto.toAccount()).toAccountDto()
     }
@@ -30,7 +35,7 @@ internal class AccountService(
         accountRepository.findByPesel(pesel)?.let {
             return it.toAccountDto()
         }
-        throw BadRequestException("Account with given pesel not found")
+        throw InternalException("Account with given pesel not found")
     }
 
     fun exchange(pesel: String, value: BigDecimal, from: CurrencyCode, to: CurrencyCode): AccountDto {
@@ -40,12 +45,12 @@ internal class AccountService(
             exchangeMoney(fromAccount, toAccount, value)
             return it.toAccountDto()
         }
-        throw BadRequestException("Account with given pesel not found")
+        throw InternalException("Account with given pesel not found")
     }
 
     fun exchangeMoney(fromAccount: SubAccount, toAccount: SubAccount, value: BigDecimal) {
         if (fromAccount.balance < value) {
-            throw BadRequestException("There are not enough funds in the account")
+            throw InternalException("There are not enough funds in the account")
         }
         val rate = rateService.getRate(CurrencyCode.USD).rates.first().mid
         when (fromAccount.currencyCode) {
@@ -60,6 +65,7 @@ internal class AccountService(
                 subAccountRepository.save(updatedFromAccount)
                 subAccountRepository.save(updatedToAccount)
             }
+
             CurrencyCode.USD -> {
                 val updatedFromAccount = fromAccount.copy(balance = fromAccount.balance.minus(value).customScale(2))
                 val updatedToAccount =
@@ -74,7 +80,7 @@ internal class AccountService(
     }
 
     private fun verifyPesel(pesel: String) {
-        if (pesel.length != 11) throw BadRequestException("Incorrect pesel length")
+        if (pesel.length != 11) throw InternalException("Incorrect pesel length")
         val year = pesel.take(2).toInt()
         val month = pesel.substring(2, 4).toInt()
         val day = pesel.substring(4, 6).toInt()
@@ -82,13 +88,11 @@ internal class AccountService(
             in 1..12 -> LocalDate.of(1900 + year, month, day)
             in 21..32 -> LocalDate.of(2000 + year, month - 20, day)
             in 40..52 -> LocalDate.of(2100 + year, month - 40, day)
-            else -> throw BadRequestException("Invalid pesel")
+            else -> throw InternalException("Invalid pesel")
         }
         if (ChronoUnit.YEARS.between(date, LocalDate.now()) < 18) {
-            throw BadRequestException("Age must be equal or over 18")
+            throw InternalException("Age must be equal or over 18")
         }
     }
 
 }
-
-class BadRequestException(message: String) : RuntimeException(message)

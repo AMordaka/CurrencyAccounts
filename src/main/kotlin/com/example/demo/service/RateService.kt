@@ -1,6 +1,7 @@
 package com.example.demo.service
 
-import com.example.demo.model.CurrencyCode
+import com.example.demo.model.db.CurrencyCode
+import com.example.demo.model.exception.InternalException
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -18,7 +19,7 @@ internal class NBPRateService(private val webClient: WebClient) : RateService {
             .retrieve()
             .bodyToMono<ExchangeRatesSeries>()
             .block()?.let { return it }
-        throw BadRequestException("Unable fetch exchange rates")
+        throw InternalException("Unable fetch exchange rates")
     }
 }
 

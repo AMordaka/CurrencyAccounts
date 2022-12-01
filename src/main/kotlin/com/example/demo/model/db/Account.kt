@@ -1,4 +1,4 @@
-package com.example.demo.model
+package com.example.demo.model.db
 
 import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
